@@ -10,12 +10,13 @@
     body{background:#f3f4f6}
     .card{background:white;border-radius:10px;padding:14px;box-shadow:0 6px 18px rgba(15,23,42,0.06)}
     .chat-card{background:linear-gradient(90deg,#fbf8ff,#f7fff9);border-left:4px solid #7c3aed}
+    .heatday{width:14px;height:14px;margin:2px;border-radius:3px;display:inline-block}
   </style>
 </head>
 <body class="p-6 font-sans text-gray-800">
   <header class="mb-6">
     <h1 class="text-2xl font-semibold">Project Habit — Premium Dashboard</h1>
-    <p class="text-sm text-gray-600">Chat-style progress, sparklines, calendar heatmap (demo)</p>
+    <p class="text-sm text-gray-600">Chat-style progress, sparklines, calendar heatmap</p>
   </header>
 
   <main class="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -25,6 +26,11 @@
       <div class="card mb-4">
         <h2 class="font-medium mb-2">30-day trends</h2>
         <canvas id="trendChart" height="120"></canvas>
+      </div>
+
+      <div class="card mb-4">
+        <h2 class="font-medium mb-2">Calendar heatmap (last 30 days)</h2>
+        <div id="heatmap" class="p-2"></div>
       </div>
 
       <div class="card">
@@ -41,14 +47,16 @@
 
       <div class="card">
         <h3 class="font-medium">Settings</h3>
-        <div class="mt-2 text-sm text-gray-600">Data format: per-day JSON. Deploy-ready for Netlify.</div>
+        <div class="mt-2 text-sm text-gray-600">Data format: per-day JSON. Deploys auto via GitHub.</div>
       </div>
     </aside>
   </main>
 
   <script>
     async function fetchDays(){
-      const list = ['2026-03-04','2026-03-03'];
+      const list = [];
+      // discover files programmatically would require server; we have a small static list for demo
+      for(let i=0;i<30;i++){ const d = new Date(2026,2,4 - i); const iso = d.toISOString().slice(0,10); list.push(iso); }
       const days = [];
       for(const d of list){
         try{ const r = await fetch('data/habits/'+d+'.json'); if(r.ok) days.push(await r.json()); }catch(e){}
@@ -109,16 +117,33 @@
       const ctx = document.getElementById('trendChart').getContext('2d');
       const labels = [];
       const datasets = [];
-      // collect up to 7 days from sample
-      const days = ['2026-03-04','2026-03-03'];
+      const days = [];
+      for(let i=0;i<30;i++){ const d=new Date(2026,2,4-i); days.push(d.toISOString().slice(0,10)); }
       days.forEach(d=>labels.push(d));
       let colorIdx=0; const colors=['#6366f1','#ef4444','#10b981','#f59e0b'];
       for(const h in map){
-        const series = map[h].map(x=>Number(x.value)||0);
+        const series = [];
+        for(const d of days){
+          const entry = (map[h]||[]).find(x=>x.date==d);
+          series.push(entry?Number(entry.value)||0:0);
+        }
         datasets.push({label:h,data:series,fill:false,borderColor:colors[colorIdx%colors.length],tension:0.3});
         colorIdx++;
       }
       new Chart(ctx,{type:'line',data:{labels, datasets},options:{plugins:{legend:{display:true}},scales:{y:{beginAtZero:true}}}});
+    }
+
+    function renderHeatmap(days,habit){
+      const container = document.getElementById('heatmap'); container.innerHTML='';
+      // days is array of day objects with date and entries
+      days.reverse(); // oldest first
+      days.forEach(day=>{
+        const e = (day.entries||[]).find(x=>x.habit==habit) || {value:0};
+        const v = Number(e.value)||0;
+        const color = v===0 ? '#eee' : (v<0.5? '#c7e9b4': (v<1? '#7fcdbb':'#2c7fb8'));
+        const d = document.createElement('div'); d.className='heatday'; d.style.background=color; d.title=`${day.date}: ${e.value}`;
+        container.appendChild(d);
+      });
     }
 
     (async function(){
@@ -127,6 +152,7 @@
       renderSummary(map);
       renderFeed(map);
       renderTrendChart(map);
+      renderHeatmap(days,'Morning run');
       document.getElementById('recent').textContent = JSON.stringify(days[0]||{}, null, 2);
     })();
   </script>
