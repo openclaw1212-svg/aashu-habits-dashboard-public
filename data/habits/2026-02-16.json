@@ -1,0 +1,23 @@
+{
+  "date": "2026-02-16",
+  "entries": [
+    {
+      "habit": "Morning run",
+      "value": 1.0,
+      "note": "auto",
+      "ts": "2026-02-16T06:30:00+05:30"
+    },
+    {
+      "habit": "Meditation",
+      "value": "yes",
+      "note": "auto",
+      "ts": "2026-02-16T07:00:00+05:30"
+    },
+    {
+      "habit": "Reading",
+      "value": 60,
+      "note": "auto",
+      "ts": "2026-02-16T21:00:00+05:30"
+    }
+  ]
+}
